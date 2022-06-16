@@ -22,15 +22,15 @@ import Head from 'next/head'
 import Router from "next/router"
 import { useRouter } from "next/router"
 import CustomPopup from '../components/customPopup'
+import { getSession, signOut } from 'next-auth/react'
 
 
 
 
-export default function WebApp(){
+export default function WebApp({ session }){
     // if user is not logged in take them back to login page
-    const { user, mutateUser } = useUser({
-        redirectTo: "/login",
-    })
+    const user = session?.user
+
     const { elections } = useElections(user)
 
     // top checks the latest post in the database and sees if it is already shown on screen or not
@@ -222,10 +222,7 @@ export default function WebApp(){
                             onClick={async (e) => {
                                 e.preventDefault()
                                 sessionStorage.clear()
-                                mutateUser(
-                                    await fetchJson("/api/logout", { method: "POST" }),
-                                    false,
-                                );
+                                signOut({ callbackUrl: '/api/auth/signin' })
                             }}
                         >
                             Logout
@@ -283,12 +280,8 @@ export default function WebApp(){
                         <button className="text-slate-500 px-2 py-8 border-b-2 border-white h-1/4 duration-200 flex justify-center items-center duration-200 hover:text-violet-100 flex justify-center items-center" 
                             onClick={async (e) => {
                                 e.preventDefault()
-                                mutateUser(
-                                    await fetchJson("/api/logout", { method: "POST" }),
-                                    false,
-                                );
                                 sessionStorage.clear()
-                                Router.push("/login")
+                                signOut({ callbackUrl: '/api/auth/signin' })
                             }}
                         >                        
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -408,3 +401,20 @@ export default function WebApp(){
 //         props: { electionData }
 //     }
 // }
+
+export async function getServerSideProps(context){
+    const session = await getSession(context)
+    console.log(session)
+    if(!session){
+        return {
+            redirect: {
+                destination: '/api/auth/signin',
+                permanent: false,
+            }
+        }
+    }
+
+    return {
+        props: { session },
+    }
+}

@@ -1,61 +1,59 @@
 // template file - refer to bulletin.js
-import { withIronSessionApiRoute } from "iron-session/next";
-import { sessionOptions } from "../../lib/session";
 import { runner as eventsRunner } from "../../lib/database/dbevents"
 import { runner as usersRunner } from "../../lib/database/dbusers"
 import { getVoterInfo } from "../../lib/civic";
 var stringSimilarity = require("string-similarity")
 import { getCurrentUnix } from "../../lib/timestamp";
+import { getSession } from "next-auth/react";
 
-export default withIronSessionApiRoute(electionsRoute, sessionOptions)
-
-async function electionsRoute(req,res){
-    const user = req.session.user
-
-    if(!user || user.isLoggedIn === false) {
+export default async function electionsRoute(req,res){
+    const session = await getSession({ req })
+    if(!session){
         res.status(401).end();
-        console.log("> elections.js: ERROR - user not logged in!")
-        return;
-    }
+        console.log("> createpost.js: ERROR: User not logged in!")
+    }else{
+        const user = session.user
 
-    const { 
-        query: { country, state, county, city },
-    } = await req
+        const { 
+            query: { country, state, county, city },
+        } = await req
 
-    try{
-        const id = [country, state, county, city]
-        console.log(id, user.cityID)
-        var eventsData = await eventsRunner('getElections', [id, getCurrentUnix()])
-        console.log(eventsData)
-        var userData = await usersRunner('getAddress', [user.uid])
-        var civicData = null
-        if(userData.success){
-            console.log('> elections.js: Address String', userData.address+' '+user.cityID[3]+' '+user.cityID[1])
-            civicData = await getVoterInfo(userData.address+' '+user.cityID[3]+' '+user.cityID[1])
-            console.log('this is civicdata!', civicData)
-        }
-        
-        if(civicData === null || civicData.error|| civicData.notFound){
-            // there is no civic data
-            if(eventsData.resdb.length > 0){
-                res.status(200).json(eventsData.resdb)
-            }else{
-                throw "No data was found!"
+        try{
+            const id = [country, state, county, city]
+            console.log(id, user.cityID)
+            var eventsData = await eventsRunner('getElections', [id, getCurrentUnix()])
+            console.log(eventsData)
+            var userData = await usersRunner('getAddress', [user.uid])
+            var civicData = null
+            if(userData.success){
+                console.log('> elections.js: Address String', userData.address+' '+user.cityID[3]+' '+user.cityID[1])
+                civicData = await getVoterInfo(userData.address+' '+user.cityID[3]+' '+user.cityID[1])
+                console.log('this is civicdata!', civicData)
             }
-        }else{
-            // there is civic data
-            var civicArr = [civicData.election].concat(civicData.otherElections || [])
-            if(eventsData.resdb.length > 0){
-                var merged = mergeData(eventsData.resdb, civicArr)
-                res.status(200).json(merged)
+            
+            if(civicData === null || civicData.error|| civicData.notFound){
+                // there is no civic data
+                if(eventsData.resdb.length > 0){
+                    res.status(200).json(eventsData.resdb)
+                }else{
+                    throw "No data was found!"
+                }
             }else{
-                res.status(200).json(civicArr)
+                // there is civic data
+                var civicArr = [civicData.election].concat(civicData.otherElections || [])
+                if(eventsData.resdb.length > 0){
+                    var merged = mergeData(eventsData.resdb, civicArr)
+                    res.status(200).json(merged)
+                }else{
+                    res.status(200).json(civicArr)
+                }
             }
+        }catch(err){
+            console.log("> elections.js: ERROR", err)
+            res.status(500).json({message:err})
         }
-    }catch(err){
-        console.log("> elections.js: ERROR", err)
-        res.status(500).json({message:err})
     }
+    
 }
 
 function mergeData(a,b){

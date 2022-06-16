@@ -10,13 +10,12 @@ import Head from 'next/head'
 import styles from '../styles/CreatePostPage.module.css'
 import { getGeocode, getLatLng } from "use-places-autocomplete"
 import AddrSearch from '../components/addrsearch'
+import { getSession } from 'next-auth/react'
 
 const LIBS = ["places"]
 
-export default function CreatePostPage(){
-    const { user, mutateUser } = useUser({  // only logged in users can create posts
-        redirectTo: "/login",
-    })
+export default function CreatePostPage({ session }){
+    const user = session?.user
 
     const [error, setError] = useState('')
     
@@ -270,4 +269,20 @@ const PlacesAutocomplete = ({setSelected, setZoom, setCenter}) => {
     return <AddrSearch 
         handleSelection={(addr) => handleSelection(addr)}
     />
+}
+
+export async function getServerSideProps(context){
+    const session = await getSession(context)
+    if(!session){
+        return {
+            redirect: {
+                destination: '/api/auth/signin',
+                permanent: false,
+            }
+        }
+    }
+
+    return {
+        props: { session },
+    }
 }

@@ -2,20 +2,16 @@ import Link from "next/link"
 import { useRouter } from "next/router"
 import { useEffect, useState, useRef } from 'react'
 import * as React from 'react'
-import useUser from '../../lib/useUser'
-import Router from 'next/router'
 import { getCurrentUnix, timeAgo, unixToReg } from '../../lib/timestamp'
-import fetchJson from '../../lib/fetchJson'
-import Head from 'next/head'
-import styles from '../../styles/CreatePostPage.module.css'
 import Logo from "../../components/logo"
 import useUpdatesBulletin from "../../lib/useUpdates"
 import useOnScreen from "../../lib/useOnScreen"
+import { signOut } from "next-auth/react"
+import { getSession } from "next-auth/react"
 
-export default function ViewPostPage(){
-    const { user, mutateUser } = useUser({
-        redirectTo: "/login",
-    })
+
+export default function ViewPostPage({ session }){
+    const user = session?.user
 
     // grab the post id from url
     const router = useRouter()
@@ -247,10 +243,7 @@ export default function ViewPostPage(){
                                 <a className="font-bold text-white mr-5 text-lg"
                                     onClick={async (e) => {
                                         e.preventDefault()
-                                        mutateUser(
-                                            await fetchJson("/api/logout", { method: "POST" }),
-                                            false,
-                                        );
+                                        signOut({callbackUrl: '/api/auth/signin'})
                                     }}
                                 >
                                     Logout
@@ -357,4 +350,21 @@ export default function ViewPostPage(){
         </>
     )
 
+}
+
+
+export async function getServerSideProps(context){
+    const session = await getSession(context)
+    if(!session){
+        return {
+            redirect: {
+                destination: '/api/auth/signin',
+                permanent: false,
+            }
+        }
+    }
+
+    return {
+        props: { session },
+    }
 }

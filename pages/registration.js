@@ -62,7 +62,8 @@ export default function Register(){
                                 body: JSON.stringify(body),
                             })
                             if(res.success){
-                                Router.push("/login")
+                                console.log('success! redirecting to signin page')
+                                Router.push("/auth/login")
                             }
                         }catch(error){
                             if(error instanceof FetchError){

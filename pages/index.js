@@ -33,7 +33,7 @@ class Home extends React.Component{
                 <div id="mainBlock" className="rounded-lg flex flex-col justify-center items-center mx-auto w-2/3 mb-10 px-5 py-44 font-dongji">
                     <h1 className="mt-5 text-slate-600 text-5xl font-bold"><span className="text-violet-500 text-7xl">Polly, </span>the power of you.</h1>
                     <p className="mt-5 font-dongji text-3xl">Solve real-world issues from the comfort of your home.</p>
-                    <Link href="/login"><a className="duration-200 mt-10 px-3.5 py-2.5 border-2 border-violet-500 text-white bg-violet-500 rounded-lg hover:border-2 hover:border-violet-500 hover:bg-white hover:text-violet-500">Open In Browser</a></Link>
+                    <Link href="/api/auth/signin"><a className="duration-200 mt-10 px-3.5 py-2.5 border-2 border-violet-500 text-white bg-violet-500 rounded-lg hover:border-2 hover:border-violet-500 hover:bg-white hover:text-violet-500">Open In Browser</a></Link>
                 </div>
 
 

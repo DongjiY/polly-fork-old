@@ -1,26 +1,22 @@
 // Importing react elements
 import React, { useState } from "react"
+import { signIn, getSession } from "next-auth/react"
 
 // Importing next elements
 import Head from 'next/head'
 import Link from 'next/link'
 
 //Importing lib files
-import useUser from "../lib/useUser";
-import fetchJson, { FetchError } from "../lib/fetchJson"
+import useUser from "../../lib/useUser";
 
 // Importing components
-import LoginForm from "../components/formlogin"
-import NavBar from "../components/navbar"
-import Footer from "../components/footer"
+import LoginForm from "../../components/formlogin"
+import NavBar from "../../components/navbar"
+import Footer from "../../components/footer"
 
 
 export default function Login() {
   // here we just check if user is already logged in and redirect to profile
-    const { mutateUser } = useUser({
-        redirectTo: "/web",
-        redirectIfFound: true,
-    })
 
     const [errorMsg, setErrorMsg] = useState("")
     const [loginCount, setLoginCount] = useState(1)
@@ -45,20 +41,13 @@ export default function Login() {
                             };
 
                             try {
-                                mutateUser(
-                                    await fetchJson("/api/login", {
-                                        method: "POST",
-                                        headers: { "Content-Type": "application/json" },
-                                        body: JSON.stringify(body),
-                                    }),
-                                )
-                            } catch (error) {
-                                if(error instanceof FetchError){
-                                    setErrorMsg(error.data.message)
-                                    setLoginCount(loginCount+1)
-                                }else{
-                                    console.error("> /pages/login.js: An unexpected error happened:", error)
+                                const res = await signIn('credentials', { username: body.username, password: body.password, callbackUrl: '/web' })
+                                if(res?.error){
+                                    setErrorMsg("Your username and password do not match")
+                                    throw "Your username and password do not match"
                                 }
+                            } catch (error) {
+                                console.error(error)
                             }
                         }}
                     />
@@ -71,4 +60,21 @@ export default function Login() {
 
         </>
     )
+}
+
+export async function getServerSideProps(context){
+    const session = await getSession(context)
+
+    if(session){
+        return {
+            redirect: {
+                destination: '/web',
+                permanent: false,
+            }
+        }
+    }
+
+    return {
+        props: { session }
+    }
 }
